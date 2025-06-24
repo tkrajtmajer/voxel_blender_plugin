@@ -1,7 +1,37 @@
+"""
+This module implements spatial carving using photometric consistency. 
+"""
 import numpy as np
-from . import VoxelGrid, color_sim
+from . import VoxelGrid
 
-def spatial_carve(images, width, height, depth, merge_technique, concavity_depth, colors_threshold=6, variance_threshold=0.5, hollow_grid=False):
+def spatial_carve(images,
+                    width,
+                    height,
+                    depth,
+                    merge_technique,
+                    concavity_depth,
+                    colors_threshold=6,
+                    variance_threshold=0.5,
+                    hollow_grid=False):
+    """Apply spatial carving to generate the grid from the passed images.
+
+    Args:
+        images: Images that were loaded through the panel
+        width (int): Set width
+        height (int): Set height
+        depth (int): Set depth
+        merge_technique (String): Color merging technique
+        concavity_depth (float): Concavity depth multiplier
+        colors_threshold (int, optional): Number of colors that need to intersect at a point. 
+        Defaults to 6.
+        variance_threshold (float, optional): Amount of color variance allowed at a point. 
+        Defaults to 0.5.
+        hollow_grid (bool, optional): Choice for whether the model should be filled in at 
+        non-visible voxel points. Defaults to False.
+
+    Returns:
+        The 3D grid of colors representing the model
+    """
     voxel_grid = VoxelGrid.VoxelGrid(width, height, depth)
     colors = np.full((width, height, depth, 4), [0, 0, 0, 1], dtype=float)
 
@@ -18,21 +48,21 @@ def spatial_carve(images, width, height, depth, merge_technique, concavity_depth
                         candidates.append(front_color)
                         available_projections['front'] = front_color
 
-                # back 
+                # back
                 if 'BACK' in images:
                     back_color = images['BACK'][z, width - 1 - x]
                     if back_color[3] > 0:
                         candidates.append(back_color)
                         available_projections['back'] = back_color
 
-                # left 
+                # left
                 if 'LEFT' in images:
                     left_color = images['LEFT'][z, depth - 1 - y]
                     if left_color[3] > 0:
                         candidates.append(left_color)
                         available_projections['left'] = left_color
 
-                # right 
+                # right
                 if 'RIGHT' in images:
                     right_color = images['RIGHT'][z, y]
                     if right_color[3] > 0:
@@ -57,7 +87,6 @@ def spatial_carve(images, width, height, depth, merge_technique, concavity_depth
                     colors[x, y, z] = [0, 0, 0, 0]
                     continue
 
-                max_dist = 0.0
                 colors_array = np.array([c[:3] for c in candidates])
                 variance = np.var(colors_array, axis=0)
                 total_variance = np.sum(variance)
@@ -84,7 +113,7 @@ def spatial_carve(images, width, height, depth, merge_technique, concavity_depth
                         unique_colors, counts = np.unique(colors_np, axis=0, return_counts=True)
                         max_index = np.argmax(counts)
                         final_color = list(unique_colors[max_index]) + [1.0] 
-                    
+
                     else:
                         distances = {
                             'front': y,
@@ -103,7 +132,7 @@ def spatial_carve(images, width, height, depth, merge_technique, concavity_depth
                     colors[x, y, z] = final_color
 
     if hollow_grid:
-        hollow_grid = voxel_grid.hollow_out_grid(colors) 
+        hollow_grid = voxel_grid.hollow_out_grid(colors)
         voxel_grid.colors = hollow_grid
 
     else:

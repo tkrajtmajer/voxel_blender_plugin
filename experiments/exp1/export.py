@@ -35,7 +35,7 @@ def save_color_grid(grid, out_path):
 
 def main():
     input_dir = './models'
-    output_dir = './out'
+    output_dir = './ground_truth'
     os.makedirs(output_dir, exist_ok=True)
 
     for filename in os.listdir(input_dir):

@@ -1,11 +1,26 @@
+"""
+This module implements gradient-based depth estimation. 
+"""
+from collections import deque
 import numpy as np
 from . import VoxelGrid
-from collections import deque
 
 def calculate_depth(view, image, other_images, width, height, depth):
+    """Estimate inital depth by intersecting input images and testing overlap positions.
 
+    Args:
+        view (string): Chosen image view direction
+        image: Chosen image
+        other_images: Other images to test depth against
+        width (int): Set width
+        height (int): Set height
+        depth (int): Set depth
+
+    Returns:
+        Initial depth map as a 2D array int values
+    """
     depth_map = -np.ones((image.shape[0], image.shape[1]), dtype=int)
-    
+
     if view == 'FRONT':
         for x in range (width):
             for z in range (height):
@@ -15,7 +30,7 @@ def calculate_depth(view, image, other_images, width, height, depth):
                     max_overlap = -1
                     max_overlap_idx = -1
 
-                    # compare each pixel in the image to all heights 
+                    # compare each pixel in the image to all heights
                     for y in range (depth):
 
                         overlap = 0
@@ -36,7 +51,7 @@ def calculate_depth(view, image, other_images, width, height, depth):
                         if max_overlap < overlap:
                             max_overlap = overlap
                             max_overlap_idx = y
-                    
+
                     depth_map[z, x] = max_overlap_idx
 
                 else:
@@ -51,7 +66,7 @@ def calculate_depth(view, image, other_images, width, height, depth):
                     max_overlap = -1
                     max_overlap_idx = -1
 
-                    # compare each pixel in the image to all heights 
+                    # compare each pixel in the image to all heights
                     for y in range (depth-1,0,-1):
 
                         overlap = 0
@@ -87,7 +102,7 @@ def calculate_depth(view, image, other_images, width, height, depth):
                     max_overlap = -1
                     max_overlap_idx = -1
 
-                    # compare each pixel in the image to all heights 
+                    # compare each pixel in the image to all heights
                     for x in range (width):
 
                         overlap = 0
@@ -123,7 +138,7 @@ def calculate_depth(view, image, other_images, width, height, depth):
                     max_overlap = -1
                     max_overlap_idx = -1
 
-                    # compare each pixel in the image to all heights 
+                    # compare each pixel in the image to all heights
                     for x in range (width-1,0,-1):
 
                         overlap = 0
@@ -160,7 +175,7 @@ def calculate_depth(view, image, other_images, width, height, depth):
                     max_overlap = -1
                     max_overlap_idx = -1
 
-                    # compare each pixel in the image to all heights 
+                    # compare each pixel in the image to all heights
                     for z in range (height-1,0,-1):
 
                         overlap = 0
@@ -186,7 +201,7 @@ def calculate_depth(view, image, other_images, width, height, depth):
 
                 else:
                     depth_map[y, x] = -1 # transparent pixel, skip it when merging
-    
+
     elif view == 'BOTTOM':
         # images['BOTTOM'][depth - 1 - y, x]
         for x in range (width):
@@ -197,7 +212,7 @@ def calculate_depth(view, image, other_images, width, height, depth):
                     max_overlap = -1
                     max_overlap_idx = -1
 
-                    # compare each pixel in the image to all heights 
+                    # compare each pixel in the image to all heights
                     for z in range (height):
 
                         overlap = 0
@@ -227,6 +242,14 @@ def calculate_depth(view, image, other_images, width, height, depth):
     return depth_map
 
 def sobel(image):
+    """Calculate sobel gradients 
+
+    Args:
+        image: Image to compute gradients over
+
+    Returns:
+        _type_: Sobel gradients, magnitude and x and y components.
+    """
     sobel_x = np.array([
         [-1, 0, 1],
         [-2, 0, 2],
@@ -255,10 +278,20 @@ def sobel(image):
     return grad_mag, gx, gy
 
 def connected_components(mask, min_size=5):
+    """Connected components algorithm based on:
+        https://www.geeksforgeeks.org/flood-fill-algorithm/ 
+
+    Args:
+        mask: 2D array of values over which the algorithm computes region sizes
+        min_size (int, optional): Minimum region size to filter. Defaults to 5.
+
+    Returns:
+        Regions where size is greater than or equal to the minimum size
+    """
     h, w = mask.shape
     visited = np.zeros_like(mask, dtype=bool)
     output_mask = np.zeros_like(mask, dtype=bool)
-    
+
     for y in range(h):
         for x in range(w):
             if mask[y, x] and not visited[y, x]:
@@ -276,17 +309,46 @@ def connected_components(mask, min_size=5):
                             (cy-1, cx), (cy+1, cx),
                             (cy, cx-1), (cy, cx+1)
                         ])
-                
+
                 if len(region_pixels) >= min_size:
                     for py, px in region_pixels:
                         output_mask[py, px] = True
 
     return output_mask
 
-def estimate_using_gradients(view, image, curr_depth_map, width, height, depth, intensity_threshold=1.0, concavity_depth=0.5, factor = 1, min_region_size=5, keep_concave_regions=True):
+def estimate_using_gradients(view,
+                            image,
+                            curr_depth_map,
+                            width,
+                            height,
+                            depth,
+                            intensity_threshold=1.0,
+                            concavity_depth=0.5,
+                            factor = 1,
+                            min_region_size=5,
+                            keep_concave_regions=True):
+    """Calculate gradients of the input image, use the values to update the initial depth map.
+
+    Args:
+        view (string): Chosen image view direction
+        image: Chosen image
+        curr_depth_map: Initial depth map that was calculated for the image
+        width (int): Set width
+        height (int): Set height
+        depth (int): Set depth
+        intensity_threshold (float): Intensity cutoff threshold
+        concavity_depth (float): Concavity depth multiplier
+        factor (float): Factor multipler
+        min_region_size (float): Minimum size of concave regions
+        keep_concave_regions (bool): Choice of whether voxels in concave regions should 
+        be in the final model
+
+    Returns:
+        The final depth map after using updating the initial map with selected intensity values.
+    """
     gray = np.mean(image[:, :, :3], axis=2)
     h, w = gray.shape
-    grad_mag, gx, gy = sobel(gray)
+    grad_mag, _, _ = sobel(gray)
 
     alpha = image[:, :, 3]
     object_mask = alpha > 0.1
@@ -294,10 +356,11 @@ def estimate_using_gradients(view, image, curr_depth_map, width, height, depth, 
     flipped_mags = np.zeros_like(grad_mag)
     flipped_mags[object_mask] = 1.0 - grad_mag[object_mask]
 
-    concavity_candidates = (flipped_mags < intensity_threshold) & (flipped_mags > 0.0) & (object_mask)
-    
+    concavity_candidates = ((flipped_mags < intensity_threshold) &
+                            (flipped_mags > 0.0) & (object_mask))
+
     valid_regions = connected_components(concavity_candidates, min_size=min_region_size)
-    
+
     depth_map = curr_depth_map.astype(np.float32)
 
     for y in range(h):
@@ -305,7 +368,7 @@ def estimate_using_gradients(view, image, curr_depth_map, width, height, depth, 
             intensity = gray[y, x]
             if valid_regions[y, x]:
                 if keep_concave_regions:
-                    multiplier = (1 * concavity_depth * (1 - intensity * factor))
+                    multiplier = 1 * concavity_depth * (1 - intensity * factor)
 
                     if view == 'FRONT':
                         depth_map[y, x] = curr_depth_map[y, x] + depth*multiplier
@@ -326,10 +389,19 @@ def estimate_using_gradients(view, image, curr_depth_map, width, height, depth, 
     final = depth_map.astype(np.int32)
     return final
 
-'''
-    just join all the maps into the final grid, use the images for colors
-'''
 def intersect_maps(depth_maps, images, width, height, depth):
+    """Intersect the calculated depth maps into the final grid.
+
+    Args:
+        depth_maps: Depth maps for each image
+        images: Selected set of images
+        width (int): Set width
+        height (int): Set height
+        depth (int): Set depth
+
+    Returns:
+        Final 3D grid.
+    """
     voxel_grid = VoxelGrid.VoxelGrid(width, height, depth)
     colors = np.zeros((width, height, depth, 4), dtype=float)
 
@@ -361,7 +433,32 @@ def intersect_maps(depth_maps, images, width, height, depth):
     voxel_grid.colors = colors
     return voxel_grid
 
-def generate_final_grid(images, width, height, depth, intensity_threshold, concavity_depth, factor, min_region_size, keep_concave_regions):
+def generate_final_grid(images,
+                        width,
+                        height,
+                        depth,
+                        intensity_threshold,
+                        concavity_depth,
+                        factor,
+                        min_region_size,
+                        keep_concave_regions):
+    """Generate the grid using depth estimation. 
+
+    Args:
+        images: Images that were loaded through the panel
+        width (int): Set width
+        height (int): Set height
+        depth (int): Set depth
+        intensity_threshold (float): Intensity cutoff threshold
+        concavity_depth (float): Concavity depth multiplier
+        factor (float): Factor multipler
+        min_region_size (float): Minimum size of concave regions
+        keep_concave_regions (bool): Choice of whether voxels in concave regions should 
+        be in the final model
+
+    Returns:
+        The final 3D grid as a color array. 
+    """
 
     depth_maps = {}
 
@@ -370,7 +467,17 @@ def generate_final_grid(images, width, height, depth, intensity_threshold, conca
 
         curr_depth_map = calculate_depth(view, image, other_images, width, height, depth)
 
-        final_depth_map = estimate_using_gradients(view, image, curr_depth_map, width, height, depth, intensity_threshold, concavity_depth, factor, min_region_size, keep_concave_regions)
+        final_depth_map = estimate_using_gradients(view,
+                                                    image,
+                                                    curr_depth_map,
+                                                    width,
+                                                    height,
+                                                    depth, 
+                                                    intensity_threshold,
+                                                    concavity_depth,
+                                                    factor,
+                                                    min_region_size,
+                                                    keep_concave_regions)
 
         depth_maps[view] = final_depth_map
 

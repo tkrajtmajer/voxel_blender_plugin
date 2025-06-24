@@ -1,22 +1,36 @@
+"""
+Voxel Grid class, used to store the grid color information.
+"""
 import json
 import numpy as np
 
 class VoxelGrid:
-
+    """
+    Voxel Grid class.
+    """
     def __init__(self, width, height, depth, channels=4):
-        self.width = width 
-        self.height = height 
-        self.depth = depth 
+        self.width = width
+        self.height = height
+        self.depth = depth
         self.colors = np.zeros(shape=(width, height, depth, channels), dtype=float)
 
-    def getColors(self):
+    def get_colors(self):
+        """
+        Returns 3D array of colors
+        """
         return self.colors
 
-    def setColor(self, x, y, z, color):
+    def set_color(self, x, y, z, color):
+        """
+        Set color at (x,y,z) as specified
+        """
         self.colors[x, y, z] = color
 
     # slice by slice
-    def visualizeGrid(self):
+    def visualize_grid(self):
+        """
+        Print layers of the grid.
+        """
         for z in range(self.depth):
             print(f"Layer {z + 1}:")
             for y in range(self.height):
@@ -25,8 +39,10 @@ class VoxelGrid:
                     print(f"Voxel ({x}, {y}, {z}): {color}")
             print("\n") 
 
-    def writeGrid(self):
-        print("wrote grid")
+    def write_grid(self):
+        """
+        Write grid values to a JSON file.
+        """
         voxel_data = []
         w, h, d, _ = self.colors.shape
 
@@ -43,6 +59,9 @@ class VoxelGrid:
             json.dump(voxel_data, f)
 
     def hollow_out_grid(self, colors):
+        """
+        Produce a hollow version of the grid to improve performance.
+        """
         width, height, depth, _ = colors.shape
         hollow_grid = np.copy(colors)
 
@@ -71,6 +90,3 @@ class VoxelGrid:
                         hollow_grid[x, y, z] = [0, 0, 0, 0]
 
         return hollow_grid
-
-
-        
