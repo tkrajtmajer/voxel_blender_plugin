@@ -71,22 +71,19 @@ For example, the following models use images from ```./experiments/exp2/assets/`
 
 ***INPUT IMAGES:***
 
-<img src="./experiments/exp2/assets/shark/front.png" alt="Demo" width="50"/>
-<img src="./experiments/exp2/assets/shark/back.png" alt="Demo" width="50"/>
+<img src="./experiments/exp2/assets/shark/front.png" alt="Demo" width="50"/> <img src="./experiments/exp2/assets/shark/back.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/shark/left.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/shark/right.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/shark/top.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/shark/bottom.png" alt="Demo" width="50"/>
 
-<img src="./experiments/exp2/assets/turtle/front.png" alt="Demo" width="50"/>
-<img src="./experiments/exp2/assets/turtle/back.png" alt="Demo" width="50"/>
+<img src="./experiments/exp2/assets/turtle/front.png" alt="Demo" width="50"/> <img src="./experiments/exp2/assets/turtle/back.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/turtle/left.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/turtle/right.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/turtle/top.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/turtle/bottom.png" alt="Demo" width="50"/>
 
-<img src="./experiments/exp2/assets/feesh/front.png" alt="Demo" width="50"/>
-<img src="./experiments/exp2/assets/feesh/back.png" alt="Demo" width="50"/>
+<img src="./experiments/exp2/assets/feesh/front.png" alt="Demo" width="50"/> <img src="./experiments/exp2/assets/feesh/back.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/feesh/left.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/feesh/right.png" alt="Demo" width="50"/>
 <img src="./experiments/exp2/assets/feesh/top.png" alt="Demo" width="50"/>
@@ -94,9 +91,7 @@ For example, the following models use images from ```./experiments/exp2/assets/`
 
 ***OUTPUT VOXEL GRIDS:***
 
-<img src="./example_images/shark.png" alt="Demo" width="200"/>
-<img src="./example_images/tortle.png" alt="Demo" width="200"/>
-<img src="./example_images/fish.png" alt="Demo" width="200"/>
+<img src="./example_images/shark.png" alt="Demo" width="200"/> <img src="./example_images/tortle.png" alt="Demo" width="200"/> <img src="./example_images/fish.png" alt="Demo" width="200"/>
 
 ## Running experiments
 ### Experiment 1
@@ -133,7 +128,7 @@ The rendered grids will be outputted in ```./experiments/exp1/rendered_out/```. 
 
 To run the comparison algorithm, you first need to install the ```PIL``` library to your Blender environment, which can be done by using the command: \
 ```bash
-<path-to-blender>/blender --background --python-expr "import ensurepip, subprocess, sys; ensurepip.bootstrap(); subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'Pillow'])"
+blender --background --python-expr "import ensurepip, subprocess, sys; ensurepip.bootstrap(); subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'Pillow'])"
 ```
 
 Then you can run 
